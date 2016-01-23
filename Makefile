@@ -1,12 +1,14 @@
 INCLUDE_DIR = ./include
 
-OBJS = main.o
+OBJS = main.o	\
+	lex.o	\
+	parse.o
 
 all: $(OBJS)
-	g++ -o pietgen $<
+	g++ -o pietgen $(OBJS)
 
 %.o: %.cpp
-	g++ -c $< -o $@
+	g++ -c $< -o $@ -I$(INCLUDE_DIR) -std=c++11
 
 clean:
 	rm -rf $(OBJS) pietgen
