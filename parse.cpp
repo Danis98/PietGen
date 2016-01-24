@@ -42,12 +42,42 @@ token get_tok(){
 	return tokens[cur_ptr++];
 }
 
+std::string keyword_to_str(Keyword k){
+	switch(k){
+	#define o(id, val, num) case id: return val;
+		LEX_LIST
+	#undef o
+	default: return "INVALID KEYWORD";
+	}
+}
+
+void print_ast(){
+	std::cout<<"[DEBUG] BEGIN STATEMENT LIST\n";
+	for(int i=0;i<cur_node->stmts.size();i++){
+		int type=cur_node->stmts[i]->getID();
+		switch(type){
+		case STMT:
+			std::cout<<"[DEBUG] STATEMENT {"<<keyword_to_str(cur_node->stmts[i]->cmd);
+			if(cur_node->stmts[i]->cmd==TOK_PUSH)
+				std::cout<<", "<<cur_node->stmts[i]->val<<"}\n";
+			else if(cur_node->stmts[i]->cmd==TOK_IN || cur_node->stmts[i]->cmd==TOK_OUT)
+				std::cout<<", "<<keyword_to_str(cur_node->stmts[i]->io_type)<<"}\n";
+			else
+				std::cout<<"}\n";
+			break;
+		case PROC:
+			break;
+		default: break;
+		}
+	}
+	std::cout<<"[DEBUG] END STATEMENT LIST\n";
+}
+
 void parse_stmt_list();
 
 void parse_stmt(){
 	token t=get_tok();
 	NStatement *stmt=new NStatement;
-	std::cout<<"[DEBUG] "<<t<<"\n";
 	stmt->cmd=keyword_map[t];
 	if(keyword_map[t]==TOK_PROC){
 		if(nested) parse_error("Procedures cannot be nested");
@@ -105,6 +135,8 @@ void parse_prog(){
 		|| keyword_map[t]==TOK_CHAR) 
 		parse_error("Wrong token: "+t);
 	else parse_stmt_list();
+	
+	print_ast();
 }
 
 void parse(){
