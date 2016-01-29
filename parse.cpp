@@ -62,11 +62,19 @@ void print_ast(){
 				std::cout<<", "<<cur_node->stmts[i]->val<<"}\n";
 			else if(cur_node->stmts[i]->cmd==TOK_IN || cur_node->stmts[i]->cmd==TOK_OUT)
 				std::cout<<", "<<keyword_to_str(cur_node->stmts[i]->io_type)<<"}\n";
+			else if(cur_node->stmts[i]->cmd==TOK_CALL)
+				std::cout<<", "<<cur_node->stmts[i]->id<<"}\n";
 			else
 				std::cout<<"}\n";
 			break;
-		case PROC:
-			break;
+		case PROC:{
+			std::cout<<"[DEBUG] PROCEDURE {"<<cur_node->stmts[i]->id<<"}\n";
+			NStatementList *prev=cur_node;
+			cur_node=&(((NProcedure*)cur_node->stmts[i])->block);
+			print_ast();
+			cur_node=prev;
+			std::cout<<"[DEBUG] END OF PROCEDURE\n";
+			break;}
 		default: break;
 		}
 	}
@@ -80,11 +88,13 @@ void parse_stmt(){
 	NStatement *stmt=new NStatement;
 	stmt->cmd=keyword_map[t];
 	if(keyword_map[t]==TOK_PROC){
+		stmt=new NProcedure;
 		if(nested) parse_error("Procedures cannot be nested");
 		NStatementList *prev_node=cur_node;
 		token id=get_tok();
-		if(keyword_map[id]!=TOK_INVALID) parse_error("Keywords are not permitted as procedure IDs: "
-						+id+" used\n");
+		if(keyword_map[id]!=TOK_INVALID)
+			parse_error("Keywords are not permitted as procedure IDs: "
+					+id+" used\n");
 		nested=true;
 		cur_node=&(((NProcedure*)stmt)->block);
 		parse_stmt_list();
@@ -112,13 +122,21 @@ void parse_stmt(){
 			parse_error("Wrong token: "+io);
 		stmt->io_type=keyword_map[io];
 	}
+	else if(keyword_map[t]==TOK_CALL){
+		token id=get_tok();
+		if(keyword_map[id]!=TOK_INVALID)
+			parse_error("Keywords are not permitted as procedure IDs: "
+					+id+" used\n");
+		stmt->id=id;
+	}
 	
 	cur_node->stmts.push_back(stmt);
 }
 
 void parse_stmt_list(){
 	token t=peek();
-	if(keyword_map[t]==TOK_EOS) return;
+	if(keyword_map[t]==TOK_EOS
+		|| keyword_map[t]==TOK_END) return;
 	if(keyword_map[t]==TOK_END 
 		|| keyword_map[t]==TOK_INT 
 		|| keyword_map[t]==TOK_CHAR) 
